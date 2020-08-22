@@ -1,34 +1,73 @@
 package com.algaworks.osworks.controller;
 
 import com.algaworks.osworks.model.Cliente;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.algaworks.osworks.repository.ClienteRepository;
+import com.algaworks.osworks.service.ClienteService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.validation.Valid;
 import java.util.List;
-
-import static java.util.Arrays.asList;
+import java.util.Optional;
 
 @RestController
+@RequestMapping("/clientes")
 public class ClienteController {
 
-    @GetMapping("/clientes")
-    public List<Cliente> getClientes(){
-        var cliente1 = new Cliente();
-        var cliente2 = new Cliente();
-        
-        cliente1.setId(1L);
-        cliente1.setEmail("lucas@email.com");
-        cliente1.setNome("Lucas");
-        cliente1.setTelefone("62983122871");
+    @Autowired
+    ClienteRepository clienteRepository;
 
-        cliente2.setId(2L);
-        cliente2.setEmail("lucas2@email.com");
-        cliente2.setNome("Lucas2");
-        cliente2.setTelefone("62983122871");
-        
-        return Arrays.asList(cliente1,cliente2);
+    @Autowired
+    ClienteService clienteService;
+
+    @GetMapping
+    public List<Cliente> getClientes(){
+        return clienteRepository.findAll();
+    }
+
+    @GetMapping("/{clienteId}")
+    public ResponseEntity<Cliente> getClienteById(@PathVariable Long clienteId){
+        Optional<Cliente> cliente = clienteRepository.findById(clienteId);
+
+        if (cliente.isPresent()){
+            return ResponseEntity.ok(cliente.get());
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Cliente postCliente(@Valid @RequestBody Cliente cliente){
+        return clienteService.salvar(cliente);
+    }
+
+    @PutMapping("/{clienteId}")
+    public ResponseEntity<Cliente> putCliente(@Valid @RequestBody Cliente cliente, @PathVariable Long clienteId){
+
+        if (!clienteRepository.existsById(clienteId)){
+            return ResponseEntity.notFound().build();
+        }
+
+        cliente.setId(clienteId);
+        clienteService.salvar(cliente);
+
+        return ResponseEntity.ok(cliente);
+    }
+
+    @DeleteMapping("/{clienteId}")
+    public ResponseEntity<Void> deleteCliente(@Valid @PathVariable Long clienteId){
+        if (!clienteRepository.existsById(clienteId)){
+            return ResponseEntity.notFound().build();
+        }
+
+        clienteService.excluir(clienteId);
+
+        return ResponseEntity.noContent().build();
+
     }
 }
